@@ -1,7 +1,7 @@
 'use strict';
 
 import { WORDS, getRandomWord } from './modules/words.js';
-import { loadState, saveState, recordGameResult, Prefs } from './modules/storage.js';
+import { loadState, saveState, recordGameResult, clearState, Prefs } from './modules/storage.js';
 import { getCurrentUser, onAuthStateChange } from './modules/supabase.js';
 
 const WORD_LENGTH  = 5;
@@ -21,21 +21,6 @@ let currentMode  = 'infinite'; // 'daily' | 'infinite'
 // Cache de palabras válidas (incluye todas las del listado local)
 const validCache = new Set(WORDS);
 
-const boardEl    = document.getElementById('board');
-const keyboardEl = document.getElementById('keyboard');
-const modalEl    = document.getElementById('modal');
-const toastEl    = document.getElementById('toast');
-
-// ── Auth state ────────────────────────────────────────
-
-let currentUser = null;
-
-onAuthStateChange((user) => {
-    currentUser = user;
-});
-
-// Obtener usuario actual al cargar
-getCurrentUser().then(user => { currentUser = user; });
 const boardEl      = document.getElementById('board');
 const keyboardEl   = document.getElementById('keyboard');
 const modalEl      = document.getElementById('modal');
@@ -43,6 +28,13 @@ const toastEl      = document.getElementById('toast');
 const hiddenInputEl= document.getElementById('hidden-input');
 
 const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+// ── Auth state ────────────────────────────────────────
+
+let currentUser = null;
+
+onAuthStateChange((user) => { currentUser = user; });
+getCurrentUser().then(user => { currentUser = user; });
 
 // ── Dictionary validation ─────────────────────────────
 
@@ -60,11 +52,11 @@ async function isWordValid(word) {
             `https://es.wiktionary.org/w/api.php?action=opensearch&search=${encodeURIComponent(normalized.toLowerCase())}&limit=10&namespace=0&format=json&origin=*`,
             5000
         );
-        const data   = await resp.json();
-        const pageId = Object.keys(data.query.pages)[0];
-        const exists = pageId !== '-1';
-        if (exists) validCache.add(word);
-        return exists;
+        const data        = await resp.json();
+        const suggestions = data[1] ?? [];
+        const found       = suggestions.some(s => normalizeWord(s) === normalized);
+        if (found) validCache.add(normalized);
+        return found;
     } catch {
         return false;
     }
@@ -337,8 +329,7 @@ function getTile(r, c) { return document.getElementById(`tile-${r}-${c}`); }
 
 document.getElementById('btn-new-game').addEventListener('click', () => {
     modalEl.classList.add('hidden');
-    // Limpiar estado guardado para empezar nueva partida
-    localStorage.removeItem(currentMode === 'daily' ? 'wordle_daily_state' : 'wordle_infinite_state');
+    clearState(currentMode);
     initGame();
 });
 
