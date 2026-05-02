@@ -36,6 +36,13 @@ onAuthStateChange((user) => {
 
 // Obtener usuario actual al cargar
 getCurrentUser().then(user => { currentUser = user; });
+const boardEl      = document.getElementById('board');
+const keyboardEl   = document.getElementById('keyboard');
+const modalEl      = document.getElementById('modal');
+const toastEl      = document.getElementById('toast');
+const hiddenInputEl= document.getElementById('hidden-input');
+
+const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 // ── Dictionary validation ─────────────────────────────
 
@@ -46,10 +53,11 @@ function fetchWithTimeout(url, ms) {
 }
 
 async function isWordValid(word) {
-    if (validCache.has(word)) return true;
+    const normalized = normalizeWord(word);
+    if (validCache.has(normalized)) return true;
     try {
         const resp = await fetchWithTimeout(
-            `https://es.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word.toLowerCase())}&prop=info&format=json&origin=*`,
+            `https://es.wiktionary.org/w/api.php?action=opensearch&search=${encodeURIComponent(normalized.toLowerCase())}&limit=10&namespace=0&format=json&origin=*`,
             5000
         );
         const data   = await resp.json();
@@ -334,6 +342,24 @@ document.getElementById('btn-new-game').addEventListener('click', () => {
     initGame();
 });
 
+// Teclado virtual en móvil: tocar el tablero enfoca el input oculto
+document.getElementById('board-container').addEventListener('click', () => hiddenInputEl.focus());
+
+hiddenInputEl.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter')     { e.preventDefault(); handleKey('ENTER'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); handleKey('BACKSPACE'); }
+});
+
+hiddenInputEl.addEventListener('input', () => {
+    const val = hiddenInputEl.value;
+    hiddenInputEl.value = '';
+    for (const char of val) {
+        const ch = normalizeVowel(char.toUpperCase());
+        if (/^[A-ZÑ]$/.test(ch)) handleKey(ch);
+    }
+});
+
 keyboardEl.addEventListener('click', e => {
     const key = e.target.closest('[data-key]');
     if (key) handleKey(key.dataset.key);
@@ -341,6 +367,7 @@ keyboardEl.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.target === hiddenInputEl) return;
     const k = e.key;
     if (k === 'Enter')     { handleKey('ENTER'); return; }
     if (k === 'Backspace') { handleKey('BACKSPACE'); return; }
@@ -352,6 +379,10 @@ document.addEventListener('keydown', e => {
 
 function normalizeVowel(ch) {
     return ({ 'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ü':'U' })[ch] ?? ch;
+}
+
+function normalizeWord(word) {
+    return word.toUpperCase().split('').map(normalizeVowel).join('');
 }
 
 // ── Start ─────────────────────────────────────────────

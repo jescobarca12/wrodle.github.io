@@ -39,8 +39,7 @@ type: project
 
 ## Patrones de JavaScript
 
-- `'use strict'` habilitado
-- Sin módulos ES (todo en un solo archivo, scope global)
+- ES Modules (`type="module"`) — `app.js` importa desde `modules/`
 - `async/await` para la validación de palabras
 - `AbortController` + `setTimeout` para timeout de fetch
 - `Set` para caché de palabras válidas (`validCache`)
@@ -49,7 +48,7 @@ type: project
 
 ## Restricciones técnicas
 
-- No se puede usar `import/export` (no hay bundler ni servidor que sirva módulos ES nativos localmente sin CORS issues)
 - Sin TypeScript
 - Sin preprocesador CSS (SASS/Less)
 - El tamaño total del proyecto debe permanecer pequeño para carga rápida en GitHub Pages
+- Desarrollo local: servir con `python3 -m http.server 8080` (los ES Modules requieren HTTP, no `file://`)
