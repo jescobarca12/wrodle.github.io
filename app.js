@@ -1,112 +1,4 @@
-'use strict';
-
-const WORDS = [
-  // A
-  "ABRIR","ABUSO","AEREO","AGRIO","AGUDO","AGUJA","AJENO","ALAMO","ALERO","ALFIL",
-  "ALGAS","ALIÑO","ALISO","ALTAR","ALZAR","AMADO","AMAGO","AMBAR","AMENO","AMIGA",
-  "AMIGO","ANCHO","ANCLA","ANDAR","ANTES","AÑEJO","AÑORO","APODO","APOYA","APURO",
-  "AQUEL","ARCOS","ARDOR","ARDER","ARDUO","ARENA","AREPA","ARGOT","ARMAR","ARMAS",
-  "AROMA","ARPON","ARTES","ASADO","ASEAR","ASILO","ASOMO","ASTRO","ATADO","ATAJO",
-  "ATLAS","ATAUD","ATICO","ATRIL","ATRIO","ATROZ","AUDAZ","AUDIO","AUTOR","AVARO",
-  "AVENA","AVION","AVISO","AXILA","AYUDA","AYUNO","AZOTE","AHORA",
-  // B
-  "BABOR","BAILE","BANCO","BANDO","BARBA","BARCO","BARRO","BATIR","BEBER","BELLO",
-  "BICHO","BLUSA","BOLSA","BOLLO","BOMBA","BORDE","BOXEO","BRAZO","BRAVO","BRAZA",
-  "BREGA","BREVE","BREZO","BRIDA","BRISA","BROMA","BROTE","BRUJA","BRUJO","BUENO",
-  "BUQUE","BULTO","BURLA","BURRO","BUSCA","BUSTO","BAÑAR",
-  // C
-  "CABLE","CABRA","CACTO","CAIDO","CALAR","CALDO","CALMA","CALOR","CALVO","CAMPO",
-  "CANAL","CANOA","CANTO","CAPAZ","CARGO","CARNE","CARPA","CARTA","CASCO","CASTO",
-  "CAUSA","CAVAR","CEBRA","CENAR","CERDO","CERRO","CESTO","CETRO","CHICO","CHINA",
-  "CICLO","CIEGO","CIELO","CIFRA","CINCO","CIRCO","CISNE","CITAR","CLARO","CLASE",
-  "CLAVO","CLERO","CLIMA","COBRE","COBRO","COCER","COCHE","COFRE","COLMO","COLOR",
-  "COMBO","COMER","CORAL","CORSO","CORZO","CORTO","COSTA","COSER","CREMA","CRUEL",
-  "CRUDO","CROMO","CRUCE","CUAJO","CUERO","CUEVA","CULPA","CURAR","CURSI","CURVA",
-  // D
-  "DANZA","DARDO","DECIR","DEBER","DELTA","DENSO","DEUDA","DICHA","DICHO","DIETA",
-  "DIGNO","DIQUE","DISCO","DOBLE","DOLOR","DOMAR","DONDE","DORSO","DROGA","DUCHA",
-  "DUELO","DULCE","DUEÑO","DURAR",
-  // E
-  "EBRIO","ENANO","ENERO","ENTRE","ERROR","ETAPA",
-  // F
-  "FALDA","FALSO","FANGO","FARSA","FAVOR","FELIZ","FEROZ","FIBRA","FINCA","FIRMA",
-  "FISCO","FLACO","FLECO","FLOTA","FOBIA","FONDO","FORMA","FORRO","FRASE","FRENO",
-  "FRESA","FRUTA","FUEGO","FUGAZ","FURIA","FUSIL",
-  // G
-  "GAFAS","GALLO","GANAS","GANSO","GARZA","GARRA","GANAR","GASTO","GEMIR","GENIO",
-  "GENTE","GIRAR","GLOBO","GOLPE","GORDO","GORRA","GOZAR","GRADO","GRAMO","GRANO",
-  "GRASA","GRATO","GRIPE","GRUPO","GRUTA","GUAPO","GUISO","GUSTO",
-  // H
-  "HABLA","HACIA","HACHA","HAMPA","HECHO","HELAR","HEROE","HIELO","HIENA","HIMNO",
-  "HOGAR","HONDA","HONOR","HONGO","HORCA","HORDA","HORNO","HOTEL","HUESO","HUEVO",
-  "HUMOR","HURTO",
-  // I
-  "ICONO","IDEAL","IDOLO","IGUAL","ILESO","ILUSO","IMPAR","INDIO",
-  // J
-  "JABON","JAMON","JARRO","JASPE","JAULA","JEREZ","JOVEN","JUEGO","JUNTO","JURAR",
-  "JUSTO",
-  // K
-  "KARMA","KOALA",
-  // L
-  "LABIO","LACRA","LAICO","LAMER","LANCE","LANZA","LAPSO","LARGO","LARVA","LASER",
-  "LAVAR","LECHO","LEGUA","LEJOS","LENTE","LENTO","LETAL","LETRA","LIBRA","LIGAR",
-  "LINCE","LINEA","LIRIO","LISTA","LITRO","LOCAL","LOCRO","LOGRO","LUNES","LUNAR",
-  "LUCHA","LLAMA","LLANO","LLAVE",
-  // M
-  "MADRE","MACHO","MAGMA","MAGRO","MALVA","MAMBO","MAMUT","MANCO","MANGA","MANSO",
-  "MANTA","MANTO","MARCA","MARCO","MAREA","MAREO","MARZO","MATAR","MATIZ","MAYOR",
-  "MEDIA","MEJOR","MELON","MENOR","MENOS","MENTA","METAL","METRO","MIEDO","MILLA",
-  "MIRAR","MISMO","MITAD","MOLDE","MOLAR","MOLER","MONJE","MONTE","MORAL","MORIR",
-  "MORRO","MORSA","MOTOR","MOVER","MUELA","MUCHO","MUNDO","MUJER","MUGIR","MULTA",
-  "MURAL","MURGA","MUSLO",
-  // N
-  "NACER","NAFTA","NARDO","NARIZ","NAVAL","NEGRO","NICHO","NIETO","NIMBO","NIÑEZ",
-  "NIVEL","NOCHE","NOGAL","NORMA","NORIA","NORTE","NOVEL","NOVIA","NOVIO","NUEVA",
-  "NUEVO","NUNCA",
-  // O
-  "OBRAR","OBVIO","OBRAS","OCASO","OJERA","OLIVA","OPACO","ORATE","ORDEN","ORGIA",
-  "ORUGA","OSADO","OSTRA","OTEAR","OTERO","OTOÑO","OVEJA",
-  // P
-  "PADRE","PACTO","PAGAR","PAJAR","PALCO","PALMA","PAMPA","PANAL","PANDA","PANZA",
-  "PAPEL","PARCO","PARED","PARRA","PASEO","PASMO","PASTA","PASTO","PATIO","PAUSA",
-  "PAVOR","PECHO","PEDIR","PEGAR","PELAR","PERLA","PERRO","PICAR","PIEZA","PILAR",
-  "PINAR","PINTO","PINZA","PISAR","PISTA","PLAGA","PLANO","PLATA","PLAYA","PLAZA",
-  "PLENO","PLOMO","PLUMA","PODER","POLCA","POLVO","PONER","POTRO","PRADO","PRESA",
-  "PRIMO","PRISA","PROSA","PULGA","PULIR","PULPO","PULSO","PUNTO","PURGA","PUÑAL",
-  "PAÑAL",
-  // Q
-  "QUEJA","QUEMA","QUESO",
-  // R
-  "RABIA","RADIO","RANGO","RAPAZ","RAPTO","RASGO","RASPA","RATON","RAUDO","RECIO",
-  "RECTA","RECTO","REGLA","REGIO","REINA","REINO","RELOJ","RENTA","RETAR","RESTO",
-  "RETRO","REZAR","RIADA","RIEGO","RIFLE","RIGOR","RISCO","RITMO","RIVAL","ROBOT",
-  "ROBLE","ROCIO","RODEO","ROLLO","ROMBO","RONDA","RONCO","ROSAL","ROSCA","RUBIA",
-  "RUBIO","RUEDA","RUIDO","RUMBO","RURAL",
-  // S
-  "SAETA","SABIO","SABOR","SABLE","SAGAZ","SALIR","SALMO","SALSA","SALTO","SALUD",
-  "SARNA","SARRO","SAUNA","SAUCE","SECAR","SELVA","SEMEN","SEÑAL","SEPIA","SERIE",
-  "SERIO","SEXTO","SIDRA","SIEGA","SIGLO","SIGNO","SILLA","SIMIO","SISAL","SITIO",
-  "SOBAR","SOBRA","SOBRE","SOCIO","SOLAZ","SOLAR","SOLER","SONAR","SOPOR","SORBO",
-  "SORDO","SORNA","SUCIO","SUECO","SUELO","SUERO","SUEÑO","SUMAR","SURCO",
-  // T
-  "TABLA","TALLO","TANDA","TANTO","TAPAR","TAPIZ","TARDE","TAREA","TARRO","TASAR",
-  "TECHO","TEMPO","TEMOR","TENER","TENUE","TERCO","TESIS","TEXTO","TIARA","TIBIA",
-  "TIESO","TIGRE","TILDE","TIMAR","TINTO","TIRAR","TOCAR","TOLDO","TOMAR","TOQUE",
-  "TORDO","TOREO","TORNO","TORPE","TORRE","TORSO","TOTAL","TRAGO","TRAMO","TRAPO",
-  "TRATO","TRAZO","TRECE","TRETA","TRIGO","TRONO","TROPA","TROTE","TROZO","TRUFA",
-  "TUMBO","TUMOR","TURBA","TURCO","TURNO","TUTOR",
-  // U
-  "UFANO","ULTRA","UNGIR","UNICO","UNTAR","URANO",
-  // V
-  "VACIO","VAINA","VALOR","VALLA","VAPOR","VASCO","VASTO","VEJEZ","VELAR","VELLO",
-  "VELOZ","VENAS","VENGA","VENTA","VERDE","VERBO","VERSO","VIAJE","VIEJO","VIGOR",
-  "VILLA","VIRAL","VIRAR","VIRUS","VISOR","VISTA","VITAL","VIUDA","VIVIR","VOCAL",
-  "VODKA","VOLAR","VOTAR","VUELO","VULGO",
-  // Y
-  "YACER","YARDA","YEGUA","YERBA","YERNO","YERMO",
-  // Z
-  "ZAFIO","ZAMBO","ZARCO","ZARPA","ZARZO","ZORRA","ZORRO","ZUECO","ZUMBA","ZURDO",
-];
+import { WORDS } from './modules/words.js';
 
 const WORD_LENGTH = 5;
 const MAX_GUESSES = 6;
@@ -124,10 +16,13 @@ let toastTimer = null;
 // Words validated by API get cached here so we only call once per word
 const validCache = new Set(WORDS);
 
-const boardEl   = document.getElementById('board');
-const keyboardEl= document.getElementById('keyboard');
-const modalEl   = document.getElementById('modal');
-const toastEl   = document.getElementById('toast');
+const boardEl      = document.getElementById('board');
+const keyboardEl   = document.getElementById('keyboard');
+const modalEl      = document.getElementById('modal');
+const toastEl      = document.getElementById('toast');
+const hiddenInputEl= document.getElementById('hidden-input');
+
+const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
 // ── Dictionary validation ─────────────────────────────
 
@@ -138,19 +33,20 @@ function fetchWithTimeout(url, ms) {
 }
 
 async function isWordValid(word) {
-    if (validCache.has(word)) return true;
+    const normalized = normalizeWord(word);
+    if (validCache.has(normalized)) return true;
     try {
         const resp = await fetchWithTimeout(
-            `https://es.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word.toLowerCase())}&prop=info&format=json&origin=*`,
+            `https://es.wiktionary.org/w/api.php?action=opensearch&search=${encodeURIComponent(normalized.toLowerCase())}&limit=10&namespace=0&format=json&origin=*`,
             5000
         );
         const data = await resp.json();
-        const pageId = Object.keys(data.query.pages)[0];
-        const exists = pageId !== '-1';
-        if (exists) validCache.add(word);
-        return exists;
+        const suggestions = data[1] ?? [];
+        // Acepta si alguna sugerencia, normalizada, coincide con la palabra buscada
+        const found = suggestions.some(s => normalizeWord(s) === normalized);
+        if (found) validCache.add(normalized);
+        return found;
     } catch {
-        // Sin conexión o timeout: sólo acepta palabras del listado local
         return false;
     }
 }
@@ -165,6 +61,7 @@ function initGame() {
     isRevealing = false;
     buildBoard();
     keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+    if (!isTouch) hiddenInputEl.focus();
 }
 
 function buildBoard() {
@@ -356,6 +253,24 @@ document.getElementById('btn-new-game').addEventListener('click', () => {
     initGame();
 });
 
+// Teclado virtual en móvil: tocar el tablero enfoca el input oculto
+document.getElementById('board-container').addEventListener('click', () => hiddenInputEl.focus());
+
+hiddenInputEl.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter')     { e.preventDefault(); handleKey('ENTER'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); handleKey('BACKSPACE'); }
+});
+
+hiddenInputEl.addEventListener('input', () => {
+    const val = hiddenInputEl.value;
+    hiddenInputEl.value = '';
+    for (const char of val) {
+        const ch = normalizeVowel(char.toUpperCase());
+        if (/^[A-ZÑ]$/.test(ch)) handleKey(ch);
+    }
+});
+
 keyboardEl.addEventListener('click', e => {
     const key = e.target.closest('[data-key]');
     if (key) handleKey(key.dataset.key);
@@ -363,6 +278,7 @@ keyboardEl.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.target === hiddenInputEl) return;
     const k = e.key;
     if (k === 'Enter')     { handleKey('ENTER'); return; }
     if (k === 'Backspace') { handleKey('BACKSPACE'); return; }
@@ -374,6 +290,10 @@ document.addEventListener('keydown', e => {
 
 function normalizeVowel(ch) {
     return ({ 'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ü':'U' })[ch] ?? ch;
+}
+
+function normalizeWord(word) {
+    return word.toUpperCase().split('').map(normalizeVowel).join('');
 }
 
 // ── Start ─────────────────────────────────────────────
