@@ -1,63 +1,97 @@
-import { WORDS, getWordOfDay } from './modules/words.js';
-import { Storage } from './modules/storage.js';
+import { WORDS, getRandomWord, getWordOfDay } from './modules/words.js';
+import { loadState, saveState, recordGameResult, clearState, Prefs } from './modules/storage.js';
+import { getCurrentUser, onAuthStateChange } from './modules/supabase.js';
 
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 6;
-const FLIP_MS = 250;   // half-flip duration (color changes at midpoint)
-const STAGGER_MS = 300; // delay between tiles
+const WORD_LENGTH  = 5;
+const MAX_GUESSES  = 6;
+const FLIP_MS      = 250;
+const STAGGER_MS   = 300;
 
-let answer = '';
-let guesses = [];
+let answer       = '';
+let guesses      = [];
 let currentGuess = '';
-let gameOver = false;
-let isRevealing = false;
-let isChecking = false;
-let toastTimer = null;
+let gameOver     = false;
+let isRevealing  = false;
+let isChecking   = false;
+let toastTimer   = null;
+let currentMode  = 'infinite'; // 'daily' | 'infinite'
 
-// Words validated by API get cached here so we only call once per word
+// Cache de palabras válidas (incluye todas las del listado local)
 const validCache = new Set(WORDS);
 
-const boardEl   = document.getElementById('board');
-const keyboardEl= document.getElementById('keyboard');
-const modalEl   = document.getElementById('modal');
-const toastEl   = document.getElementById('toast');
+const boardEl      = document.getElementById('board');
+const keyboardEl   = document.getElementById('keyboard');
+const modalEl      = document.getElementById('modal');
+const toastEl      = document.getElementById('toast');
+const hiddenInputEl= document.getElementById('hidden-input');
+
+const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+// ── Auth state ────────────────────────────────────────
+
+let currentUser = null;
+
+onAuthStateChange((user) => { currentUser = user; });
+getCurrentUser().then(user => { currentUser = user; });
 
 // ── Dictionary validation ─────────────────────────────
 
 function fetchWithTimeout(url, ms) {
-    const ctrl = new AbortController();
+    const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
 
 async function isWordValid(word) {
-    if (validCache.has(word)) return true;
+    const normalized = normalizeWord(word);
+    if (validCache.has(normalized)) return true;
     try {
         const resp = await fetchWithTimeout(
-            `https://es.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word.toLowerCase())}&prop=info&format=json&origin=*`,
+            `https://es.wiktionary.org/w/api.php?action=opensearch&search=${encodeURIComponent(normalized.toLowerCase())}&limit=10&namespace=0&format=json&origin=*`,
             5000
         );
-        const data = await resp.json();
-        const pageId = Object.keys(data.query.pages)[0];
-        const exists = pageId !== '-1';
-        if (exists) validCache.add(word);
-        return exists;
+        const data        = await resp.json();
+        const suggestions = data[1] ?? [];
+        const found       = suggestions.some(s => normalizeWord(s) === normalized);
+        if (found) validCache.add(normalized);
+        return found;
     } catch {
-        // Sin conexión o timeout: sólo acepta palabras del listado local
         return false;
     }
 }
 
 // ── Init ──────────────────────────────────────────────
 
-function initGame() {
-    answer = WORDS[Math.floor(Math.random() * WORDS.length)];
-    guesses = [];
-    currentGuess = '';
-    gameOver = false;
-    isRevealing = false;
-    buildBoard();
-    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+async function initGame() {
+    // Intentar restaurar partida guardada
+    const saved = await loadState(currentMode);
+
+    if (saved) {
+        // Restaurar estado
+        answer       = saved.answer;
+        guesses      = saved.guesses;
+        currentGuess = '';
+        gameOver     = saved.gameOver;
+        isRevealing  = false;
+        buildBoard();
+        restoreBoard(saved.guesses, saved.states);
+        if (saved.gameOver) {
+            const won = saved.won;
+            const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+            setTimeout(() => openModal(won, won ? msgs[guesses.length - 1] : ''), 400);
+        }
+    } else {
+        // Nueva partida
+        answer       = getRandomWord();
+        guesses      = [];
+        currentGuess = '';
+        gameOver     = false;
+        isRevealing  = false;
+        buildBoard();
+        keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+        // Guardar estado inicial
+        await saveState(currentMode, { answer, guesses, states: [], gameOver: false, won: false });
+    }
 }
 
 function buildBoard() {
@@ -76,6 +110,19 @@ function buildBoard() {
     }
 }
 
+function restoreBoard(savedGuesses, savedStates) {
+    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+    savedGuesses.forEach((guess, rowIdx) => {
+        const states = savedStates[rowIdx];
+        guess.split('').forEach((letter, col) => {
+            const t = getTile(rowIdx, col);
+            t.textContent    = letter;
+            t.dataset.state  = states[col];
+        });
+        applyKeyboard(guess, states);
+    });
+}
+
 // ── Input ─────────────────────────────────────────────
 
 function handleKey(key) {
@@ -88,8 +135,8 @@ function addLetter(letter) {
     if (gameOver || isRevealing || currentGuess.length >= WORD_LENGTH) return;
     currentGuess += letter;
     const t = getTile(guesses.length, currentGuess.length - 1);
-    t.textContent = letter;
-    t.dataset.state = 'tbd';
+    t.textContent    = letter;
+    t.dataset.state  = 'tbd';
     t.classList.add('pop');
     t.addEventListener('animationend', () => t.classList.remove('pop'), { once: true });
 }
@@ -124,13 +171,22 @@ async function submitGuess() {
         return;
     }
 
-    const guess = currentGuess;
+    const guess  = currentGuess;
     const states = evaluate(guess, answer);
     guesses.push(guess);
     currentGuess = '';
-    isRevealing = true;
+    isRevealing  = true;
 
-    revealRow(guesses.length - 1, states, () => {
+    // Guardar estado después de cada intento
+    await saveState(currentMode, {
+        answer,
+        guesses: [...guesses],
+        states:  guesses.map((g, i) => i === guesses.length - 1 ? states : getSavedStates(i)),
+        gameOver: false,
+        won: false,
+    });
+
+    revealRow(guesses.length - 1, states, async () => {
         isRevealing = false;
         applyKeyboard(guess, states);
 
@@ -138,26 +194,53 @@ async function submitGuess() {
             gameOver = true;
             bounceRow(guesses.length - 1);
             const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+
+            // Guardar resultado final y estadísticas
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: true,
+            });
+            await recordGameResult(currentMode, true, guesses.length);
+
             setTimeout(() => openModal(true, msgs[guesses.length - 1]), 1000);
+
         } else if (guesses.length >= MAX_GUESSES) {
             gameOver = true;
+
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: false,
+            });
+            await recordGameResult(currentMode, false, null);
+
             setTimeout(() => openModal(false), 400);
         }
     });
+}
+
+// Helper: leer estados actuales del tablero
+function getSavedStates(rowIdx) {
+    return Array.from({ length: WORD_LENGTH }, (_, c) => getTile(rowIdx, c).dataset.state ?? 'absent');
+}
+
+function collectAllStates() {
+    return guesses.map((_, r) => getSavedStates(r));
 }
 
 // ── Evaluation ────────────────────────────────────────
 
 function evaluate(guess, answer) {
     const result = Array(WORD_LENGTH).fill('absent');
-    const aArr = [...answer];
-    const gArr = [...guess];
+    const aArr   = [...answer];
+    const gArr   = [...guess];
 
     for (let i = 0; i < WORD_LENGTH; i++) {
         if (gArr[i] === aArr[i]) {
             result[i] = 'correct';
-            aArr[i] = null;
-            gArr[i] = null;
+            aArr[i]   = null;
+            gArr[i]   = null;
         }
     }
     for (let i = 0; i < WORD_LENGTH; i++) {
@@ -231,12 +314,10 @@ function setEnterLoading(on) {
 }
 
 function openModal(won, winMsg = '') {
-    document.getElementById('modal-icon').textContent = won ? '🎉' : '😔';
-    document.getElementById('modal-title').textContent = won ? winMsg : '¡Mejor suerte la próxima!';
-    document.getElementById('modal-word-reveal').innerHTML =
-        `La palabra era: <strong>${answer}</strong>`;
-    document.getElementById('modal-attempts').textContent =
-        won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
+    document.getElementById('modal-icon').textContent       = won ? '🎉' : '😔';
+    document.getElementById('modal-title').textContent      = won ? winMsg : '¡Mejor suerte la próxima!';
+    document.getElementById('modal-word-reveal').innerHTML  = `La palabra era: <strong>${answer}</strong>`;
+    document.getElementById('modal-attempts').textContent   = won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
     modalEl.classList.remove('hidden');
 }
 
@@ -246,7 +327,26 @@ function getTile(r, c) { return document.getElementById(`tile-${r}-${c}`); }
 
 document.getElementById('btn-new-game').addEventListener('click', () => {
     modalEl.classList.add('hidden');
+    clearState(currentMode);
     initGame();
+});
+
+// Teclado virtual en móvil: tocar el tablero enfoca el input oculto
+document.getElementById('board-container').addEventListener('click', () => hiddenInputEl.focus());
+
+hiddenInputEl.addEventListener('keydown', e => {
+    e.stopPropagation();
+    if (e.key === 'Enter')     { e.preventDefault(); handleKey('ENTER'); }
+    else if (e.key === 'Backspace') { e.preventDefault(); handleKey('BACKSPACE'); }
+});
+
+hiddenInputEl.addEventListener('input', () => {
+    const val = hiddenInputEl.value;
+    hiddenInputEl.value = '';
+    for (const char of val) {
+        const ch = normalizeVowel(char.toUpperCase());
+        if (/^[A-ZÑ]$/.test(ch)) handleKey(ch);
+    }
 });
 
 keyboardEl.addEventListener('click', e => {
@@ -256,6 +356,7 @@ keyboardEl.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
     if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (e.target === hiddenInputEl) return;
     const k = e.key;
     if (k === 'Enter')     { handleKey('ENTER'); return; }
     if (k === 'Backspace') { handleKey('BACKSPACE'); return; }
@@ -267,6 +368,10 @@ document.addEventListener('keydown', e => {
 
 function normalizeVowel(ch) {
     return ({ 'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U','Ü':'U' })[ch] ?? ch;
+}
+
+function normalizeWord(word) {
+    return word.toUpperCase().split('').map(normalizeVowel).join('');
 }
 
 // ── Start ─────────────────────────────────────────────

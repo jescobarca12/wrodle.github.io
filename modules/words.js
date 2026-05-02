@@ -1,3 +1,6 @@
+// modules/words.js
+// Lista de palabras del juego + funciones para obtener la palabra del día
+
 export const WORDS = [
   // A
   "ABRIR","ABUSO","AEREO","AGRIO","AGUDO","AGUJA","AJENO","ALAMO","ALERO","ALFIL",
@@ -109,9 +112,15 @@ export const WORDS = [
 // Launch date in UTC — all users share the same word on the same calendar day
 const LAUNCH_UTC = Date.UTC(2026, 4, 2); // May 2, 2026
 
+/** Devuelve la palabra del día de forma determinística (UTC, igual para todos). */
 export function getWordOfDay() {
     const now = new Date();
     const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const diff = Math.floor((todayUTC - LAUNCH_UTC) / 86_400_000);
     return WORDS[((diff % WORDS.length) + WORDS.length) % WORDS.length];
+}
+
+/** Devuelve una palabra aleatoria para el modo infinito. */
+export function getRandomWord() {
+    return WORDS[Math.floor(Math.random() * WORDS.length)];
 }

@@ -1,69 +1,240 @@
+// modules/storage.js
+// ============================================================
+// Capa de almacenamiento para Wrodle ES
+//
+// Estrategia dual:
+//  - Usuario autenticado → Supabase (persistencia cross-device)
+//  - Usuario anónimo     → localStorage (como siempre)
+//
+// app.js nunca toca localStorage ni supabase directamente.
+// Todo pasa por este módulo.
+// ============================================================
+
+import {
+  getCurrentUser,
+  getDailyGame,
+  saveDailyGame,
+  getStats,
+  updateStats
+} from './supabase.js';
+
+
+// ============================================================
+// CLAVES DE localStorage
+// ============================================================
 const KEYS = {
-    daily_state:    'wordle_daily_state',
-    infinite_state: 'wordle_infinite_state',
-    daily_stats:    'wordle_daily_stats',
-    infinite_stats: 'wordle_infinite_stats',
-    theme:          'wordle_theme',
-    hard_mode:      'wordle_hard_mode',
-    sounds:         'wordle_sounds',
-    first_visit:    'wordle_first_visit',
+  daily_state:    'wordle_daily_state',
+  infinite_state: 'wordle_infinite_state',
+  daily_stats:    'wordle_daily_stats',
+  infinite_stats: 'wordle_infinite_stats',
+  theme:          'wordle_theme',
+  hard_mode:      'wordle_hard_mode',
+  sounds:         'wordle_sounds',
+  first_visit:    'wordle_first_visit',
 };
 
-function get(key) {
-    try {
-        const v = localStorage.getItem(key);
-        return v !== null ? JSON.parse(v) : null;
-    } catch { return null; }
+
+// ============================================================
+// HELPERS INTERNOS
+// ============================================================
+
+function localGet(key) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
-function set(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+function localSet(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('[Storage] localStorage no disponible:', e);
+  }
 }
 
-function remove(key) {
-    try { localStorage.removeItem(key); } catch {}
+function todayString() {
+  return new Date().toISOString().split('T')[0]; // "2026-05-02"
 }
 
-const defaultStats = () => ({
+
+// ============================================================
+// ESTADO DE PARTIDA
+//
+// Schema: { answer, guesses, states, date, gameOver, won }
+// ============================================================
+
+/**
+ * Cargar el estado guardado de una partida.
+ * @param {string} mode - 'daily' | 'infinite'
+ * @returns {object|null}
+ */
+export async function loadState(mode) {
+  if (mode === 'daily') {
+    const user = await getCurrentUser();
+
+    if (user) {
+      try {
+        const game = await getDailyGame(user.id, todayString());
+        if (!game) return null;
+        return {
+          answer:   game.answer,
+          guesses:  game.guesses,
+          states:   game.states,
+          date:     game.date,
+          gameOver: game.completed,
+          won:      game.won,
+        };
+      } catch (e) {
+        console.warn('[Storage] Fallo Supabase, usando localStorage:', e);
+      }
+    }
+
+    // Anónimo o fallback: localStorage
+    const saved = localGet(KEYS.daily_state);
+    if (!saved || saved.date !== todayString()) return null;
+    return saved;
+  }
+
+  // Modo infinito: siempre localStorage
+  return localGet(KEYS.infinite_state);
+}
+
+/**
+ * Guardar el estado de una partida.
+ * @param {string} mode - 'daily' | 'infinite'
+ * @param {object} state
+ */
+export async function saveState(mode, state) {
+  if (mode === 'daily') {
+    localSet(KEYS.daily_state, { ...state, date: todayString() });
+
+    const user = await getCurrentUser();
+    if (user) {
+      try {
+        await saveDailyGame(user.id, todayString(), {
+          answer:    state.answer,
+          guesses:   state.guesses,
+          states:    state.states,
+          won:       state.won ?? false,
+          attempts:  state.won ? state.guesses.length : null,
+          completed: state.gameOver ?? false,
+        });
+      } catch (e) {
+        console.warn('[Storage] No se pudo guardar en Supabase:', e);
+      }
+    }
+    return;
+  }
+
+  // Modo infinito: solo localStorage
+  localSet(KEYS.infinite_state, state);
+}
+
+/**
+ * Limpiar el estado de una partida.
+ * @param {string} mode - 'daily' | 'infinite'
+ */
+export function clearState(mode) {
+  const key = mode === 'daily' ? KEYS.daily_state : KEYS.infinite_state;
+  localStorage.removeItem(key);
+  // Las partidas diarias en Supabase no se borran, son historial
+}
+
+
+// ============================================================
+// ESTADÍSTICAS
+//
+// Schema: { played, wins, currentStreak, maxStreak, distribution[6] }
+// ============================================================
+
+/**
+ * Cargar estadísticas de un modo.
+ * @param {string} mode - 'daily' | 'infinite'
+ * @returns {object}
+ */
+export async function loadStats(mode) {
+  const defaultStats = {
     played: 0, wins: 0, currentStreak: 0, maxStreak: 0,
     distribution: [0, 0, 0, 0, 0, 0],
-});
+  };
 
-/*
- * State schema:
- * {
- *   answer:   string,
- *   guesses:  string[],
- *   states:   Array<Array<'correct'|'present'|'absent'>>,
- *   date:     string,   // YYYY-MM-DD, daily mode only
- *   gameOver: boolean,
- *   won:      boolean,
- * }
- *
- * Stats schema:
- * {
- *   played: number, wins: number,
- *   currentStreak: number, maxStreak: number,
- *   distribution: number[6],  // wins by attempt count index 0-5
- * }
+  const user = await getCurrentUser();
+
+  if (user) {
+    try {
+      const data = await getStats(user.id, mode);
+      return {
+        played:        data.played,
+        wins:          data.wins,
+        currentStreak: data.current_streak,
+        maxStreak:     data.max_streak,
+        distribution:  data.distribution,
+      };
+    } catch (e) {
+      console.warn('[Storage] Fallo al cargar stats de Supabase:', e);
+    }
+  }
+
+  const key = mode === 'daily' ? KEYS.daily_stats : KEYS.infinite_stats;
+  return localGet(key) ?? defaultStats;
+}
+
+/**
+ * Registrar resultado de una partida y actualizar estadísticas.
+ * @param {string} mode - 'daily' | 'infinite'
+ * @param {boolean} won
+ * @param {number|null} attempts
  */
-export const Storage = {
-    // ── Game state ───────────────────────────────────────
-    loadState:  (mode)        => get(KEYS[`${mode}_state`]),
-    saveState:  (mode, state) => set(KEYS[`${mode}_state`], state),
-    clearState: (mode)        => remove(KEYS[`${mode}_state`]),
+export async function recordGameResult(mode, won, attempts) {
+  const user = await getCurrentUser();
 
-    // ── Statistics ───────────────────────────────────────
-    loadStats:  (mode)        => get(KEYS[`${mode}_stats`]) ?? defaultStats(),
-    saveStats:  (mode, stats) => set(KEYS[`${mode}_stats`], stats),
+  if (user) {
+    try {
+      await updateStats(user.id, mode, won, attempts);
+      return;
+    } catch (e) {
+      console.warn('[Storage] Fallo al actualizar stats en Supabase:', e);
+    }
+  }
 
-    // ── Preferences ──────────────────────────────────────
-    getTheme:        ()  => get(KEYS.theme) ?? 'dark',
-    setTheme:        (t) => set(KEYS.theme, t),
-    getHardMode:     ()  => get(KEYS.hard_mode) ?? false,
-    setHardMode:     (v) => set(KEYS.hard_mode, v),
-    getSounds:       ()  => get(KEYS.sounds) ?? false,
-    setSounds:       (v) => set(KEYS.sounds, v),
-    isFirstVisit:    ()  => get(KEYS.first_visit) !== false,
-    setTutorialSeen: ()  => set(KEYS.first_visit, false),
+  // Fallback: actualizar en localStorage
+  const key = mode === 'daily' ? KEYS.daily_stats : KEYS.infinite_stats;
+  const current = localGet(key) ?? {
+    played: 0, wins: 0, currentStreak: 0, maxStreak: 0,
+    distribution: [0, 0, 0, 0, 0, 0],
+  };
+
+  current.played += 1;
+  if (won) {
+    current.wins += 1;
+    current.currentStreak += 1;
+    current.maxStreak = Math.max(current.maxStreak, current.currentStreak);
+    if (attempts >= 1 && attempts <= 6) current.distribution[attempts - 1] += 1;
+  } else {
+    current.currentStreak = 0;
+  }
+
+  localSet(key, current);
+}
+
+
+// ============================================================
+// PREFERENCIAS DE UI (solo localStorage)
+// ============================================================
+
+export const Prefs = {
+  getTheme:     () => localStorage.getItem(KEYS.theme) ?? 'dark',
+  setTheme:     (v) => localStorage.setItem(KEYS.theme, v),
+
+  getHardMode:  () => localGet(KEYS.hard_mode) ?? false,
+  setHardMode:  (v) => localSet(KEYS.hard_mode, v),
+
+  getSounds:    () => localGet(KEYS.sounds) ?? false,
+  setSounds:    (v) => localSet(KEYS.sounds, v),
+
+  isFirstVisit: () => localStorage.getItem(KEYS.first_visit) === null,
+  markVisited:  () => localStorage.setItem(KEYS.first_visit, 'false'),
 };

@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle en Español</title>
+    <!-- Anti-flash: aplicar tema antes de que cargue el CSS -->
+    <script>
+        if (localStorage.getItem('wordle_theme') === 'light')
+            document.documentElement.dataset.theme = 'light';
+    </script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -68,6 +73,10 @@
         </div>
     </div>
 
+    <input id="hidden-input" type="text"
+           autocomplete="off" autocorrect="off"
+           autocapitalize="characters" spellcheck="false"
+           aria-hidden="true" tabindex="-1">
     <script type="module" src="app.js"></script>
 </body>
 </html>
