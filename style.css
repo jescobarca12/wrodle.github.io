@@ -132,18 +132,21 @@ main {
     flex-direction: column;
     gap: 8px;
     user-select: none;
+    width: min(500px, 100vw);
+    padding: 0 4px;
+    box-sizing: border-box;
 }
 
 .keyboard-row {
     display: flex;
-    gap: 6px;
-    justify-content: center;
+    gap: 5px;
 }
 
 .key {
+    flex: 1;
     height: 58px;
-    min-width: 43px;
-    padding: 0 6px;
+    min-width: 0;
+    padding: 0 2px;
     border: none;
     border-radius: 4px;
     background: var(--key-bg);
@@ -155,8 +158,9 @@ main {
     align-items: center;
     justify-content: center;
     transition: filter 0.05s;
+    touch-action: manipulation;
 }
-.key-wide { min-width: 65px; font-size: 0.72rem; }
+.key-wide { flex: 1.5; font-size: 0.72rem; }
 .key:active { filter: brightness(0.85); }
 
 .key[data-state="correct"] { background: var(--correct); }
@@ -230,11 +234,21 @@ main {
 }
 #btn-new-game:hover { filter: brightness(1.15); }
 
+/* Input oculto para teclado físico/virtual en móvil */
+#hidden-input {
+    position: fixed;
+    top: 0; left: 0;
+    width: 1px; height: 1px;
+    opacity: 0;
+    pointer-events: none;
+    font-size: 16px; /* evita zoom en iOS al enfocar */
+    border: none; padding: 0;
+}
+
 /* Responsive */
 @media (max-width: 420px) {
     :root { --tile: 52px; }
-    .key { min-width: 33px; height: 50px; font-size: 0.72rem; }
-    .key-wide { min-width: 52px; }
+    .key { height: 50px; font-size: 0.75rem; }
     header h1 { font-size: 1.5rem; }
 }
 
@@ -290,3 +304,89 @@ main {
 }
 
 .auth-form.hidden { display: none; }
+
+/* ── Login box ───────────────────────────────────────── */
+.login-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 16px;
+  padding: 40px 20px;
+}
+
+.login-box {
+  background: var(--header-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 36px 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 90%;
+  max-width: 320px;
+}
+
+.login-box h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.1rem;
+}
+
+.login-box p {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 1rem;
+  font-family: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.05rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.login-box input:focus {
+  border-color: var(--border-active);
+}
+
+.login-box button {
+  width: 100%;
+  padding: 13px;
+  background: var(--correct);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.05rem;
+  transition: filter 0.1s;
+}
+
+.login-box button:hover { filter: brightness(1.15); }
+
+.login-error {
+  color: #e55;
+  font-size: 0.85rem;
+  min-height: 20px;
+}
+
+@media (max-width: 420px) {
+  .login-box { padding: 28px 24px; }
+}
+
+@media (max-width: 330px) {
+  :root { --tile: 44px; }
+  .key { height: 44px; font-size: 0.65rem; }
+}
