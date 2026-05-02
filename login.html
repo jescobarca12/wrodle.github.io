@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wrodle ES · Entrar</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>WRODLE ES</h1>
+    <p class="subtitle">Adivina la palabra de 5 letras</p>
+  </header>
+
+  <main class="login-wrapper">
+    <div class="login-box">
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Iniciar sesión</button>
+        <button class="auth-tab" data-tab="register">Registrarse</button>
+      </div>
+
+      <!-- Login -->
+      <form id="form-login" class="auth-form">
+        <input type="email" id="login-email" placeholder="CORREO" autocomplete="email" required />
+        <input type="password" id="login-password" placeholder="CONTRASEÑA" autocomplete="current-password" required />
+        <p class="login-error" id="login-error"></p>
+        <button type="submit">ENTRAR →</button>
+      </form>
+
+      <!-- Register -->
+      <form id="form-register" class="auth-form hidden">
+        <input type="text" id="reg-username" placeholder="NOMBRE DE USUARIO" maxlength="20" required />
+        <input type="email" id="reg-email" placeholder="CORREO" autocomplete="email" required />
+        <input type="password" id="reg-password" placeholder="CONTRASEÑA" autocomplete="new-password" required />
+        <input type="password" id="reg-password2" placeholder="CONFIRMAR CONTRASEÑA" required />
+        <p class="login-error" id="register-error"></p>
+        <button type="submit">CREAR CUENTA →</button>
+      </form>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import { isLoggedIn, saveUser } from './modules/auth.js';
+
+    if (isLoggedIn()) location.replace('./index.html');
+
+    // ── Tabs ─────────────────────────────────────────
+    const tabs = document.querySelectorAll('.auth-tab');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const isLogin = tab.dataset.tab === 'login';
+        formLogin.classList.toggle('hidden', !isLogin);
+        formRegister.classList.toggle('hidden', isLogin);
+      });
+    });
+
+    // ── Login ─────────────────────────────────────────
+    formLogin.addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value;
+      const errorEl = document.getElementById('login-error');
+      errorEl.textContent = '';
+
+      try {
+        // TODO: reemplazar con llamada real al backend
+        // const res = await fetch('/api/login', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ email, password })
+        // });
+        // const data = await res.json();
+        // if (!res.ok) throw new Error(data.message);
+        // saveUser(data.username, data.token);
+
+        // Simulación temporal hasta que el backend esté listo
+        saveUser(email.split('@')[0]);
+        location.replace('./index.html');
+
+      } catch (err) {
+        errorEl.textContent = err.message || 'Error al iniciar sesión';
+      }
+    });
+
+    // ── Register ──────────────────────────────────────
+    formRegister.addEventListener('submit', async e => {
+      e.preventDefault();
+      const username = document.getElementById('reg-username').value.trim();
+      const email = document.getElementById('reg-email').value.trim();
+      const password = document.getElementById('reg-password').value;
+      const password2 = document.getElementById('reg-password2').value;
+      const errorEl = document.getElementById('register-error');
+      errorEl.textContent = '';
+
+      if (password !== password2) {
+        errorEl.textContent = 'Las contraseñas no coinciden';
+        return;
+      }
+      if (password.length < 6) {
+        errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres';
+        return;
+      }
+
+      try {
+        // TODO: reemplazar con llamada real al backend
+        // const res = await fetch('/api/register', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ username, email, password })
+        // });
+        // const data = await res.json();
+        // if (!res.ok) throw new Error(data.message);
+        // saveUser(data.username, data.token);
+
+        // Simulación temporal hasta que el backend esté listo
+        saveUser(username);
+        location.replace('./index.html');
+
+      } catch (err) {
+        errorEl.textContent = err.message || 'Error al crear la cuenta';
+      }
+    });
+  </script>
+</body>
+</html>

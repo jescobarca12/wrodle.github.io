@@ -1,15 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle en Español</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
+<script type="module">
+    import { isLoggedIn, getUser, logout } from './modules/auth.js';
+    if (!isLoggedIn()) location.replace('./login.html');
+
+    const user = getUser();
+    const subtitle = document.querySelector('.subtitle');
+    if (subtitle && user) {
+        subtitle.textContent = `Jugando como ${user.username}`;
+    }
+
+    document.getElementById('btn-logout')?.addEventListener('click', logout);
+</script>
+
 <body>
     <header>
         <h1>WORDLE ES</h1>
         <p class="subtitle">Adivina la palabra de 5 letras</p>
+        <button id="btn-logout" title="Cerrar sesión">🚪</button>
     </header>
 
     <div id="toast" class="toast hidden"></div>
@@ -68,6 +84,7 @@
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
+
 </html>

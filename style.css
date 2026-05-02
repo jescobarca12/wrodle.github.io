@@ -26,6 +26,7 @@ body {
 }
 
 header {
+    position: relative;
     width: 100%;
     border-bottom: 1px solid var(--border);
     padding: 14px 0 10px;
@@ -236,3 +237,56 @@ main {
     .key-wide { min-width: 52px; }
     header h1 { font-size: 1.5rem; }
 }
+
+/* ── Logout button ───────────────────────────────────── */
+#btn-logout {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 1.1rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+#btn-logout:hover { border-color: var(--border-active); }
+
+/* ── Auth tabs ───────────────────────────────────────── */
+.auth-tabs {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 8px 0;
+  cursor: pointer;
+  letter-spacing: 0.05rem;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.auth-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--correct);
+}
+
+/* ── Auth form ───────────────────────────────────────── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.auth-form.hidden { display: none; }
