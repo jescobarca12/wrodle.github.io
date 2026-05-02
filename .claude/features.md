@@ -32,20 +32,45 @@ type: project
 ### Responsive
 - [x] Breakpoint móvil en 420px (tiles más pequeños, teclas más compactas)
 
-## Pendientes / Ideas futuras
+---
 
-### Alta prioridad
-- [ ] **Persistencia de sesión**: guardar estado en `localStorage` para no perder la partida al recargar
-- [ ] **Estadísticas**: racha de victorias, distribución de intentos, partidas jugadas
-- [ ] **Compartir resultado**: generar grid de emojis verde/amarillo/gris para copiar
+## Roadmap — Producto Completo
 
-### Media prioridad
-- [ ] **Palabra del día**: misma palabra para todos los jugadores ese día (seeded por fecha)
-- [ ] **Modo oscuro/claro**: toggle; actualmente solo existe dark mode
-- [ ] **Tutorial/instrucciones**: overlay de primeras instrucciones para nuevos jugadores
+> Ver especificación detallada en `docs/roadmap-producto-completo.md`
 
-### Baja prioridad / Nice-to-have
-- [ ] **Sonidos**: efectos de audio opcionales
-- [ ] **Hard mode**: las letras descubiertas deben usarse en intentos siguientes
-- [ ] **Wordle infinito**: ya existe (aleatoria), pero podría tener contador de racha
-- [ ] **Ampliar lista de palabras**: el listado actual tiene ~600 palabras; podría crecer
+**Decisiones de arquitectura:**
+- Arquitectura: **ES Modules** (`modules/` directory)
+- Modos de juego: **Diario + Infinito** (coexisten, tabs en header)
+- Estadísticas: **separadas por modo**
+
+### Prerequisito
+- [ ] **Migración a ES Modules** — cambiar `<script>` a `type="module"`, crear `modules/words.js`
+
+### Módulos nuevos a crear
+- [ ] **`modules/storage.js`** — todas las operaciones de localStorage (prerequisito para features 3-6)
+- [ ] **`modules/stats.js`** — renderizado y actualización de estadísticas
+- [ ] **`modules/share.js`** — generación de emoji grid + clipboard API
+- [ ] **`modules/sounds.js`** — efectos de audio opcionales (Web Audio API)
+
+### Features de juego
+- [ ] **Persistencia de sesión** — guardar/restaurar estado en localStorage por modo
+- [ ] **Palabra del día** — misma palabra para todos (seeded por fecha, sin servidor)
+- [ ] **Modos de juego** — tabs Diario / Infinito en el header
+- [ ] **Estadísticas** — modal con racha, % victorias, distribución por intentos (por modo)
+- [ ] **Compartir resultado** — emoji grid copiado al clipboard
+- [ ] **Hard Mode** — letras reveladas deben usarse en intentos siguientes
+- [ ] **Ampliar lista de palabras** — target ~1,000–1,500 palabras (actualmente ~600)
+
+### Features de UX
+- [ ] **Modo oscuro/claro** — toggle en header, preferencia guardada en localStorage
+- [ ] **Tutorial/instrucciones** — overlay en primera visita + botón "?" permanente
+- [ ] **Sonidos** — efectos opcionales, default OFF
+
+### Orden de implementación sugerido
+1. Migración ES Modules
+2. storage.js
+3. Persistencia
+4. Modo diario + getWordOfDay
+5. Modos de juego (tabs)
+6. Estadísticas
+7-12. Compartir, Tema, Tutorial, Hard Mode, Sonidos, Ampliar palabras (independientes)
