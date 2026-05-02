@@ -1,138 +1,46 @@
 'use strict';
 
-const WORDS = [
-  // A
-  "ABRIR","ABUSO","AEREO","AGRIO","AGUDO","AGUJA","AJENO","ALAMO","ALERO","ALFIL",
-  "ALGAS","ALIÑO","ALISO","ALTAR","ALZAR","AMADO","AMAGO","AMBAR","AMENO","AMIGA",
-  "AMIGO","ANCHO","ANCLA","ANDAR","ANTES","AÑEJO","AÑORO","APODO","APOYA","APURO",
-  "AQUEL","ARCOS","ARDOR","ARDER","ARDUO","ARENA","AREPA","ARGOT","ARMAR","ARMAS",
-  "AROMA","ARPON","ARTES","ASADO","ASEAR","ASILO","ASOMO","ASTRO","ATADO","ATAJO",
-  "ATLAS","ATAUD","ATICO","ATRIL","ATRIO","ATROZ","AUDAZ","AUDIO","AUTOR","AVARO",
-  "AVENA","AVION","AVISO","AXILA","AYUDA","AYUNO","AZOTE","AHORA",
-  // B
-  "BABOR","BAILE","BANCO","BANDO","BARBA","BARCO","BARRO","BATIR","BEBER","BELLO",
-  "BICHO","BLUSA","BOLSA","BOLLO","BOMBA","BORDE","BOXEO","BRAZO","BRAVO","BRAZA",
-  "BREGA","BREVE","BREZO","BRIDA","BRISA","BROMA","BROTE","BRUJA","BRUJO","BUENO",
-  "BUQUE","BULTO","BURLA","BURRO","BUSCA","BUSTO","BAÑAR",
-  // C
-  "CABLE","CABRA","CACTO","CAIDO","CALAR","CALDO","CALMA","CALOR","CALVO","CAMPO",
-  "CANAL","CANOA","CANTO","CAPAZ","CARGO","CARNE","CARPA","CARTA","CASCO","CASTO",
-  "CAUSA","CAVAR","CEBRA","CENAR","CERDO","CERRO","CESTO","CETRO","CHICO","CHINA",
-  "CICLO","CIEGO","CIELO","CIFRA","CINCO","CIRCO","CISNE","CITAR","CLARO","CLASE",
-  "CLAVO","CLERO","CLIMA","COBRE","COBRO","COCER","COCHE","COFRE","COLMO","COLOR",
-  "COMBO","COMER","CORAL","CORSO","CORZO","CORTO","COSTA","COSER","CREMA","CRUEL",
-  "CRUDO","CROMO","CRUCE","CUAJO","CUERO","CUEVA","CULPA","CURAR","CURSI","CURVA",
-  // D
-  "DANZA","DARDO","DECIR","DEBER","DELTA","DENSO","DEUDA","DICHA","DICHO","DIETA",
-  "DIGNO","DIQUE","DISCO","DOBLE","DOLOR","DOMAR","DONDE","DORSO","DROGA","DUCHA",
-  "DUELO","DULCE","DUEÑO","DURAR",
-  // E
-  "EBRIO","ENANO","ENERO","ENTRE","ERROR","ETAPA",
-  // F
-  "FALDA","FALSO","FANGO","FARSA","FAVOR","FELIZ","FEROZ","FIBRA","FINCA","FIRMA",
-  "FISCO","FLACO","FLECO","FLOTA","FOBIA","FONDO","FORMA","FORRO","FRASE","FRENO",
-  "FRESA","FRUTA","FUEGO","FUGAZ","FURIA","FUSIL",
-  // G
-  "GAFAS","GALLO","GANAS","GANSO","GARZA","GARRA","GANAR","GASTO","GEMIR","GENIO",
-  "GENTE","GIRAR","GLOBO","GOLPE","GORDO","GORRA","GOZAR","GRADO","GRAMO","GRANO",
-  "GRASA","GRATO","GRIPE","GRUPO","GRUTA","GUAPO","GUISO","GUSTO",
-  // H
-  "HABLA","HACIA","HACHA","HAMPA","HECHO","HELAR","HEROE","HIELO","HIENA","HIMNO",
-  "HOGAR","HONDA","HONOR","HONGO","HORCA","HORDA","HORNO","HOTEL","HUESO","HUEVO",
-  "HUMOR","HURTO",
-  // I
-  "ICONO","IDEAL","IDOLO","IGUAL","ILESO","ILUSO","IMPAR","INDIO",
-  // J
-  "JABON","JAMON","JARRO","JASPE","JAULA","JEREZ","JOVEN","JUEGO","JUNTO","JURAR",
-  "JUSTO",
-  // K
-  "KARMA","KOALA",
-  // L
-  "LABIO","LACRA","LAICO","LAMER","LANCE","LANZA","LAPSO","LARGO","LARVA","LASER",
-  "LAVAR","LECHO","LEGUA","LEJOS","LENTE","LENTO","LETAL","LETRA","LIBRA","LIGAR",
-  "LINCE","LINEA","LIRIO","LISTA","LITRO","LOCAL","LOCRO","LOGRO","LUNES","LUNAR",
-  "LUCHA","LLAMA","LLANO","LLAVE",
-  // M
-  "MADRE","MACHO","MAGMA","MAGRO","MALVA","MAMBO","MAMUT","MANCO","MANGA","MANSO",
-  "MANTA","MANTO","MARCA","MARCO","MAREA","MAREO","MARZO","MATAR","MATIZ","MAYOR",
-  "MEDIA","MEJOR","MELON","MENOR","MENOS","MENTA","METAL","METRO","MIEDO","MILLA",
-  "MIRAR","MISMO","MITAD","MOLDE","MOLAR","MOLER","MONJE","MONTE","MORAL","MORIR",
-  "MORRO","MORSA","MOTOR","MOVER","MUELA","MUCHO","MUNDO","MUJER","MUGIR","MULTA",
-  "MURAL","MURGA","MUSLO",
-  // N
-  "NACER","NAFTA","NARDO","NARIZ","NAVAL","NEGRO","NICHO","NIETO","NIMBO","NIÑEZ",
-  "NIVEL","NOCHE","NOGAL","NORMA","NORIA","NORTE","NOVEL","NOVIA","NOVIO","NUEVA",
-  "NUEVO","NUNCA",
-  // O
-  "OBRAR","OBVIO","OBRAS","OCASO","OJERA","OLIVA","OPACO","ORATE","ORDEN","ORGIA",
-  "ORUGA","OSADO","OSTRA","OTEAR","OTERO","OTOÑO","OVEJA",
-  // P
-  "PADRE","PACTO","PAGAR","PAJAR","PALCO","PALMA","PAMPA","PANAL","PANDA","PANZA",
-  "PAPEL","PARCO","PARED","PARRA","PASEO","PASMO","PASTA","PASTO","PATIO","PAUSA",
-  "PAVOR","PECHO","PEDIR","PEGAR","PELAR","PERLA","PERRO","PICAR","PIEZA","PILAR",
-  "PINAR","PINTO","PINZA","PISAR","PISTA","PLAGA","PLANO","PLATA","PLAYA","PLAZA",
-  "PLENO","PLOMO","PLUMA","PODER","POLCA","POLVO","PONER","POTRO","PRADO","PRESA",
-  "PRIMO","PRISA","PROSA","PULGA","PULIR","PULPO","PULSO","PUNTO","PURGA","PUÑAL",
-  "PAÑAL",
-  // Q
-  "QUEJA","QUEMA","QUESO",
-  // R
-  "RABIA","RADIO","RANGO","RAPAZ","RAPTO","RASGO","RASPA","RATON","RAUDO","RECIO",
-  "RECTA","RECTO","REGLA","REGIO","REINA","REINO","RELOJ","RENTA","RETAR","RESTO",
-  "RETRO","REZAR","RIADA","RIEGO","RIFLE","RIGOR","RISCO","RITMO","RIVAL","ROBOT",
-  "ROBLE","ROCIO","RODEO","ROLLO","ROMBO","RONDA","RONCO","ROSAL","ROSCA","RUBIA",
-  "RUBIO","RUEDA","RUIDO","RUMBO","RURAL",
-  // S
-  "SAETA","SABIO","SABOR","SABLE","SAGAZ","SALIR","SALMO","SALSA","SALTO","SALUD",
-  "SARNA","SARRO","SAUNA","SAUCE","SECAR","SELVA","SEMEN","SEÑAL","SEPIA","SERIE",
-  "SERIO","SEXTO","SIDRA","SIEGA","SIGLO","SIGNO","SILLA","SIMIO","SISAL","SITIO",
-  "SOBAR","SOBRA","SOBRE","SOCIO","SOLAZ","SOLAR","SOLER","SONAR","SOPOR","SORBO",
-  "SORDO","SORNA","SUCIO","SUECO","SUELO","SUERO","SUEÑO","SUMAR","SURCO",
-  // T
-  "TABLA","TALLO","TANDA","TANTO","TAPAR","TAPIZ","TARDE","TAREA","TARRO","TASAR",
-  "TECHO","TEMPO","TEMOR","TENER","TENUE","TERCO","TESIS","TEXTO","TIARA","TIBIA",
-  "TIESO","TIGRE","TILDE","TIMAR","TINTO","TIRAR","TOCAR","TOLDO","TOMAR","TOQUE",
-  "TORDO","TOREO","TORNO","TORPE","TORRE","TORSO","TOTAL","TRAGO","TRAMO","TRAPO",
-  "TRATO","TRAZO","TRECE","TRETA","TRIGO","TRONO","TROPA","TROTE","TROZO","TRUFA",
-  "TUMBO","TUMOR","TURBA","TURCO","TURNO","TUTOR",
-  // U
-  "UFANO","ULTRA","UNGIR","UNICO","UNTAR","URANO",
-  // V
-  "VACIO","VAINA","VALOR","VALLA","VAPOR","VASCO","VASTO","VEJEZ","VELAR","VELLO",
-  "VELOZ","VENAS","VENGA","VENTA","VERDE","VERBO","VERSO","VIAJE","VIEJO","VIGOR",
-  "VILLA","VIRAL","VIRAR","VIRUS","VISOR","VISTA","VITAL","VIUDA","VIVIR","VOCAL",
-  "VODKA","VOLAR","VOTAR","VUELO","VULGO",
-  // Y
-  "YACER","YARDA","YEGUA","YERBA","YERNO","YERMO",
-  // Z
-  "ZAFIO","ZAMBO","ZARCO","ZARPA","ZARZO","ZORRA","ZORRO","ZUECO","ZUMBA","ZURDO",
-];
+import { WORDS, getRandomWord } from './modules/words.js';
+import { loadState, saveState, recordGameResult, Prefs } from './modules/storage.js';
+import { getCurrentUser, onAuthStateChange } from './modules/supabase.js';
 
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 6;
-const FLIP_MS = 250;   // half-flip duration (color changes at midpoint)
-const STAGGER_MS = 300; // delay between tiles
+const WORD_LENGTH  = 5;
+const MAX_GUESSES  = 6;
+const FLIP_MS      = 250;
+const STAGGER_MS   = 300;
 
-let answer = '';
-let guesses = [];
+let answer       = '';
+let guesses      = [];
 let currentGuess = '';
-let gameOver = false;
-let isRevealing = false;
-let isChecking = false;
-let toastTimer = null;
+let gameOver     = false;
+let isRevealing  = false;
+let isChecking   = false;
+let toastTimer   = null;
+let currentMode  = 'infinite'; // 'daily' | 'infinite'
 
-// Words validated by API get cached here so we only call once per word
+// Cache de palabras válidas (incluye todas las del listado local)
 const validCache = new Set(WORDS);
 
-const boardEl   = document.getElementById('board');
-const keyboardEl= document.getElementById('keyboard');
-const modalEl   = document.getElementById('modal');
-const toastEl   = document.getElementById('toast');
+const boardEl    = document.getElementById('board');
+const keyboardEl = document.getElementById('keyboard');
+const modalEl    = document.getElementById('modal');
+const toastEl    = document.getElementById('toast');
+
+// ── Auth state ────────────────────────────────────────
+
+let currentUser = null;
+
+onAuthStateChange((user) => {
+    currentUser = user;
+});
+
+// Obtener usuario actual al cargar
+getCurrentUser().then(user => { currentUser = user; });
 
 // ── Dictionary validation ─────────────────────────────
 
 function fetchWithTimeout(url, ms) {
-    const ctrl = new AbortController();
+    const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
@@ -144,27 +52,48 @@ async function isWordValid(word) {
             `https://es.wiktionary.org/w/api.php?action=query&titles=${encodeURIComponent(word.toLowerCase())}&prop=info&format=json&origin=*`,
             5000
         );
-        const data = await resp.json();
+        const data   = await resp.json();
         const pageId = Object.keys(data.query.pages)[0];
         const exists = pageId !== '-1';
         if (exists) validCache.add(word);
         return exists;
     } catch {
-        // Sin conexión o timeout: sólo acepta palabras del listado local
         return false;
     }
 }
 
 // ── Init ──────────────────────────────────────────────
 
-function initGame() {
-    answer = WORDS[Math.floor(Math.random() * WORDS.length)];
-    guesses = [];
-    currentGuess = '';
-    gameOver = false;
-    isRevealing = false;
-    buildBoard();
-    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+async function initGame() {
+    // Intentar restaurar partida guardada
+    const saved = await loadState(currentMode);
+
+    if (saved) {
+        // Restaurar estado
+        answer       = saved.answer;
+        guesses      = saved.guesses;
+        currentGuess = '';
+        gameOver     = saved.gameOver;
+        isRevealing  = false;
+        buildBoard();
+        restoreBoard(saved.guesses, saved.states);
+        if (saved.gameOver) {
+            const won = saved.won;
+            const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+            setTimeout(() => openModal(won, won ? msgs[guesses.length - 1] : ''), 400);
+        }
+    } else {
+        // Nueva partida
+        answer       = getRandomWord();
+        guesses      = [];
+        currentGuess = '';
+        gameOver     = false;
+        isRevealing  = false;
+        buildBoard();
+        keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+        // Guardar estado inicial
+        await saveState(currentMode, { answer, guesses, states: [], gameOver: false, won: false });
+    }
 }
 
 function buildBoard() {
@@ -183,6 +112,19 @@ function buildBoard() {
     }
 }
 
+function restoreBoard(savedGuesses, savedStates) {
+    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+    savedGuesses.forEach((guess, rowIdx) => {
+        const states = savedStates[rowIdx];
+        guess.split('').forEach((letter, col) => {
+            const t = getTile(rowIdx, col);
+            t.textContent    = letter;
+            t.dataset.state  = states[col];
+        });
+        applyKeyboard(guess, states);
+    });
+}
+
 // ── Input ─────────────────────────────────────────────
 
 function handleKey(key) {
@@ -195,8 +137,8 @@ function addLetter(letter) {
     if (gameOver || isRevealing || currentGuess.length >= WORD_LENGTH) return;
     currentGuess += letter;
     const t = getTile(guesses.length, currentGuess.length - 1);
-    t.textContent = letter;
-    t.dataset.state = 'tbd';
+    t.textContent    = letter;
+    t.dataset.state  = 'tbd';
     t.classList.add('pop');
     t.addEventListener('animationend', () => t.classList.remove('pop'), { once: true });
 }
@@ -231,13 +173,22 @@ async function submitGuess() {
         return;
     }
 
-    const guess = currentGuess;
+    const guess  = currentGuess;
     const states = evaluate(guess, answer);
     guesses.push(guess);
     currentGuess = '';
-    isRevealing = true;
+    isRevealing  = true;
 
-    revealRow(guesses.length - 1, states, () => {
+    // Guardar estado después de cada intento
+    await saveState(currentMode, {
+        answer,
+        guesses: [...guesses],
+        states:  guesses.map((g, i) => i === guesses.length - 1 ? states : getSavedStates(i)),
+        gameOver: false,
+        won: false,
+    });
+
+    revealRow(guesses.length - 1, states, async () => {
         isRevealing = false;
         applyKeyboard(guess, states);
 
@@ -245,26 +196,53 @@ async function submitGuess() {
             gameOver = true;
             bounceRow(guesses.length - 1);
             const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+
+            // Guardar resultado final y estadísticas
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: true,
+            });
+            await recordGameResult(currentMode, true, guesses.length);
+
             setTimeout(() => openModal(true, msgs[guesses.length - 1]), 1000);
+
         } else if (guesses.length >= MAX_GUESSES) {
             gameOver = true;
+
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: false,
+            });
+            await recordGameResult(currentMode, false, null);
+
             setTimeout(() => openModal(false), 400);
         }
     });
+}
+
+// Helper: leer estados actuales del tablero
+function getSavedStates(rowIdx) {
+    return Array.from({ length: WORD_LENGTH }, (_, c) => getTile(rowIdx, c).dataset.state ?? 'absent');
+}
+
+function collectAllStates() {
+    return guesses.map((_, r) => getSavedStates(r));
 }
 
 // ── Evaluation ────────────────────────────────────────
 
 function evaluate(guess, answer) {
     const result = Array(WORD_LENGTH).fill('absent');
-    const aArr = [...answer];
-    const gArr = [...guess];
+    const aArr   = [...answer];
+    const gArr   = [...guess];
 
     for (let i = 0; i < WORD_LENGTH; i++) {
         if (gArr[i] === aArr[i]) {
             result[i] = 'correct';
-            aArr[i] = null;
-            gArr[i] = null;
+            aArr[i]   = null;
+            gArr[i]   = null;
         }
     }
     for (let i = 0; i < WORD_LENGTH; i++) {
@@ -338,12 +316,10 @@ function setEnterLoading(on) {
 }
 
 function openModal(won, winMsg = '') {
-    document.getElementById('modal-icon').textContent = won ? '🎉' : '😔';
-    document.getElementById('modal-title').textContent = won ? winMsg : '¡Mejor suerte la próxima!';
-    document.getElementById('modal-word-reveal').innerHTML =
-        `La palabra era: <strong>${answer}</strong>`;
-    document.getElementById('modal-attempts').textContent =
-        won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
+    document.getElementById('modal-icon').textContent       = won ? '🎉' : '😔';
+    document.getElementById('modal-title').textContent      = won ? winMsg : '¡Mejor suerte la próxima!';
+    document.getElementById('modal-word-reveal').innerHTML  = `La palabra era: <strong>${answer}</strong>`;
+    document.getElementById('modal-attempts').textContent   = won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
     modalEl.classList.remove('hidden');
 }
 
@@ -353,6 +329,8 @@ function getTile(r, c) { return document.getElementById(`tile-${r}-${c}`); }
 
 document.getElementById('btn-new-game').addEventListener('click', () => {
     modalEl.classList.add('hidden');
+    // Limpiar estado guardado para empezar nueva partida
+    localStorage.removeItem(currentMode === 'daily' ? 'wordle_daily_state' : 'wordle_infinite_state');
     initGame();
 });
 
