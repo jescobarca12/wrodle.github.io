@@ -13,7 +13,14 @@
     --gap: 5px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+* { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;  /* ← agrega esto */
+    user-select: none;
+}
 
 body {
     background: var(--bg);
@@ -78,6 +85,7 @@ main {
     font-weight: 700;
     text-transform: uppercase;
     user-select: none;
+    -webkit-user-select: none;
 }
 
 .tile[data-state="tbd"] { border-color: var(--border-active); }
@@ -135,6 +143,7 @@ main {
     width: min(500px, 100vw);
     padding: 0 4px;
     box-sizing: border-box;
+    -webkit-user-select: none;
 }
 
 .keyboard-row {

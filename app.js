@@ -1,19 +1,22 @@
-import { WORDS } from './modules/words.js';
+import { WORDS, getRandomWord, getWordOfDay } from './modules/words.js';
+import { loadState, saveState, recordGameResult, clearState, Prefs } from './modules/storage.js';
+import { getCurrentUser, onAuthStateChange } from './modules/supabase.js';
 
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 6;
-const FLIP_MS = 250;   // half-flip duration (color changes at midpoint)
-const STAGGER_MS = 300; // delay between tiles
+const WORD_LENGTH  = 5;
+const MAX_GUESSES  = 6;
+const FLIP_MS      = 250;
+const STAGGER_MS   = 300;
 
-let answer = '';
-let guesses = [];
+let answer       = '';
+let guesses      = [];
 let currentGuess = '';
-let gameOver = false;
-let isRevealing = false;
-let isChecking = false;
-let toastTimer = null;
+let gameOver     = false;
+let isRevealing  = false;
+let isChecking   = false;
+let toastTimer   = null;
+let currentMode  = 'infinite'; // 'daily' | 'infinite'
 
-// Words validated by API get cached here so we only call once per word
+// Cache de palabras válidas (incluye todas las del listado local)
 const validCache = new Set(WORDS);
 
 const boardEl      = document.getElementById('board');
@@ -24,10 +27,17 @@ const hiddenInputEl= document.getElementById('hidden-input');
 
 const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
 
+// ── Auth state ────────────────────────────────────────
+
+let currentUser = null;
+
+onAuthStateChange((user) => { currentUser = user; });
+getCurrentUser().then(user => { currentUser = user; });
+
 // ── Dictionary validation ─────────────────────────────
 
 function fetchWithTimeout(url, ms) {
-    const ctrl = new AbortController();
+    const ctrl  = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), ms);
     return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(timer));
 }
@@ -40,10 +50,9 @@ async function isWordValid(word) {
             `https://es.wiktionary.org/w/api.php?action=opensearch&search=${encodeURIComponent(normalized.toLowerCase())}&limit=10&namespace=0&format=json&origin=*`,
             5000
         );
-        const data = await resp.json();
+        const data        = await resp.json();
         const suggestions = data[1] ?? [];
-        // Acepta si alguna sugerencia, normalizada, coincide con la palabra buscada
-        const found = suggestions.some(s => normalizeWord(s) === normalized);
+        const found       = suggestions.some(s => normalizeWord(s) === normalized);
         if (found) validCache.add(normalized);
         return found;
     } catch {
@@ -53,15 +62,36 @@ async function isWordValid(word) {
 
 // ── Init ──────────────────────────────────────────────
 
-function initGame() {
-    answer = WORDS[Math.floor(Math.random() * WORDS.length)];
-    guesses = [];
-    currentGuess = '';
-    gameOver = false;
-    isRevealing = false;
-    buildBoard();
-    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
-    if (!isTouch) hiddenInputEl.focus();
+async function initGame() {
+    // Intentar restaurar partida guardada
+    const saved = await loadState(currentMode);
+
+    if (saved) {
+        // Restaurar estado
+        answer       = saved.answer;
+        guesses      = saved.guesses;
+        currentGuess = '';
+        gameOver     = saved.gameOver;
+        isRevealing  = false;
+        buildBoard();
+        restoreBoard(saved.guesses, saved.states);
+        if (saved.gameOver) {
+            const won = saved.won;
+            const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+            setTimeout(() => openModal(won, won ? msgs[guesses.length - 1] : ''), 400);
+        }
+    } else {
+        // Nueva partida
+        answer       = getRandomWord();
+        guesses      = [];
+        currentGuess = '';
+        gameOver     = false;
+        isRevealing  = false;
+        buildBoard();
+        keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+        // Guardar estado inicial
+        await saveState(currentMode, { answer, guesses, states: [], gameOver: false, won: false });
+    }
 }
 
 function buildBoard() {
@@ -80,6 +110,19 @@ function buildBoard() {
     }
 }
 
+function restoreBoard(savedGuesses, savedStates) {
+    keyboardEl.querySelectorAll('[data-state]').forEach(k => delete k.dataset.state);
+    savedGuesses.forEach((guess, rowIdx) => {
+        const states = savedStates[rowIdx];
+        guess.split('').forEach((letter, col) => {
+            const t = getTile(rowIdx, col);
+            t.textContent    = letter;
+            t.dataset.state  = states[col];
+        });
+        applyKeyboard(guess, states);
+    });
+}
+
 // ── Input ─────────────────────────────────────────────
 
 function handleKey(key) {
@@ -92,8 +135,8 @@ function addLetter(letter) {
     if (gameOver || isRevealing || currentGuess.length >= WORD_LENGTH) return;
     currentGuess += letter;
     const t = getTile(guesses.length, currentGuess.length - 1);
-    t.textContent = letter;
-    t.dataset.state = 'tbd';
+    t.textContent    = letter;
+    t.dataset.state  = 'tbd';
     t.classList.add('pop');
     t.addEventListener('animationend', () => t.classList.remove('pop'), { once: true });
 }
@@ -128,13 +171,22 @@ async function submitGuess() {
         return;
     }
 
-    const guess = currentGuess;
+    const guess  = currentGuess;
     const states = evaluate(guess, answer);
     guesses.push(guess);
     currentGuess = '';
-    isRevealing = true;
+    isRevealing  = true;
 
-    revealRow(guesses.length - 1, states, () => {
+    // Guardar estado después de cada intento
+    await saveState(currentMode, {
+        answer,
+        guesses: [...guesses],
+        states:  guesses.map((g, i) => i === guesses.length - 1 ? states : getSavedStates(i)),
+        gameOver: false,
+        won: false,
+    });
+
+    revealRow(guesses.length - 1, states, async () => {
         isRevealing = false;
         applyKeyboard(guess, states);
 
@@ -142,26 +194,53 @@ async function submitGuess() {
             gameOver = true;
             bounceRow(guesses.length - 1);
             const msgs = ['¡Genio!','¡Increíble!','¡Magnífico!','¡Muy bien!','¡Bien!','¡Por los pelos!'];
+
+            // Guardar resultado final y estadísticas
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: true,
+            });
+            await recordGameResult(currentMode, true, guesses.length);
+
             setTimeout(() => openModal(true, msgs[guesses.length - 1]), 1000);
+
         } else if (guesses.length >= MAX_GUESSES) {
             gameOver = true;
+
+            await saveState(currentMode, {
+                answer, guesses: [...guesses],
+                states: collectAllStates(),
+                gameOver: true, won: false,
+            });
+            await recordGameResult(currentMode, false, null);
+
             setTimeout(() => openModal(false), 400);
         }
     });
+}
+
+// Helper: leer estados actuales del tablero
+function getSavedStates(rowIdx) {
+    return Array.from({ length: WORD_LENGTH }, (_, c) => getTile(rowIdx, c).dataset.state ?? 'absent');
+}
+
+function collectAllStates() {
+    return guesses.map((_, r) => getSavedStates(r));
 }
 
 // ── Evaluation ────────────────────────────────────────
 
 function evaluate(guess, answer) {
     const result = Array(WORD_LENGTH).fill('absent');
-    const aArr = [...answer];
-    const gArr = [...guess];
+    const aArr   = [...answer];
+    const gArr   = [...guess];
 
     for (let i = 0; i < WORD_LENGTH; i++) {
         if (gArr[i] === aArr[i]) {
             result[i] = 'correct';
-            aArr[i] = null;
-            gArr[i] = null;
+            aArr[i]   = null;
+            gArr[i]   = null;
         }
     }
     for (let i = 0; i < WORD_LENGTH; i++) {
@@ -235,12 +314,10 @@ function setEnterLoading(on) {
 }
 
 function openModal(won, winMsg = '') {
-    document.getElementById('modal-icon').textContent = won ? '🎉' : '😔';
-    document.getElementById('modal-title').textContent = won ? winMsg : '¡Mejor suerte la próxima!';
-    document.getElementById('modal-word-reveal').innerHTML =
-        `La palabra era: <strong>${answer}</strong>`;
-    document.getElementById('modal-attempts').textContent =
-        won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
+    document.getElementById('modal-icon').textContent       = won ? '🎉' : '😔';
+    document.getElementById('modal-title').textContent      = won ? winMsg : '¡Mejor suerte la próxima!';
+    document.getElementById('modal-word-reveal').innerHTML  = `La palabra era: <strong>${answer}</strong>`;
+    document.getElementById('modal-attempts').textContent   = won ? `En ${guesses.length} intento${guesses.length !== 1 ? 's' : ''}` : '';
     modalEl.classList.remove('hidden');
 }
 
@@ -250,6 +327,7 @@ function getTile(r, c) { return document.getElementById(`tile-${r}-${c}`); }
 
 document.getElementById('btn-new-game').addEventListener('click', () => {
     modalEl.classList.add('hidden');
+    clearState(currentMode);
     initGame();
 });
 
