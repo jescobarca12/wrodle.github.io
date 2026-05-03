@@ -5,26 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle en Español</title>
-    <!-- Anti-flash: aplicar tema antes de que cargue el CSS -->
     <script>
         if (localStorage.getItem('wordle_theme') === 'light')
             document.documentElement.dataset.theme = 'light';
     </script>
     <link rel="stylesheet" href="style.css">
 </head>
-
-<script type="module">
-    import { isLoggedIn, getUser, logout } from './modules/auth.js';
-    if (!isLoggedIn()) location.replace('./login.html');
-
-    const user = getUser();
-    const subtitle = document.querySelector('.subtitle');
-    if (subtitle && user) {
-        subtitle.textContent = `Jugando como ${user.username}`;
-    }
-
-    document.getElementById('btn-logout')?.addEventListener('click', logout);
-</script>
 
 <body>
     <header>
@@ -89,17 +75,25 @@
         </div>
     </div>
 
-<<<<<<< HEAD
-=======
     <input id="hidden-input" type="text"
            autocomplete="off" autocorrect="off"
            autocapitalize="characters" spellcheck="false"
            aria-hidden="true" tabindex="-1">
->>>>>>> f90811d3ad54590d55b990dcdf12d21a55de2e8c
+
+    <script type="module">
+        import { isLoggedIn, getUser, logout } from './modules/auth.js';
+        if (!isLoggedIn()) location.replace('./login.html');
+
+        const user = getUser();
+        const subtitle = document.querySelector('.subtitle');
+        if (subtitle && user) {
+            subtitle.textContent = `Jugando como ${user.username}`;
+        }
+
+        document.getElementById('btn-logout')?.addEventListener('click', logout);
+    </script>
+
     <script type="module" src="app.js"></script>
 </body>
-<<<<<<< HEAD
 
-=======
->>>>>>> 3a1e3e3ea84267825e23cf2239f63891cdcf3c92
 </html>
