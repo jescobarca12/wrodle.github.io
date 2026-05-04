@@ -16,6 +16,7 @@
     <header>
         <h1>WORDLE ES</h1>
         <p class="subtitle">Adivina la palabra de 5 letras</p>
+        <button id="btn-help" title="Cómo jugar" aria-label="Cómo jugar">?</button>
     </header>
 
     <div id="toast" class="toast hidden"></div>
@@ -64,6 +65,56 @@
         </div>
     </main>
 
+    <div id="help-modal" class="modal hidden">
+        <div class="modal-box help-box">
+            <button id="btn-help-close" class="modal-close" aria-label="Cerrar">×</button>
+            <h2>Cómo jugar</h2>
+            <p class="help-intro">Adivina la palabra en <strong>6 intentos</strong>.</p>
+            <ul class="help-rules">
+                <li>Cada palabra debe tener <strong>5 letras</strong>.</li>
+                <li>Pulsa <strong>ENTER</strong> para enviar.</li>
+                <li>Los colores indican qué tan cerca estás.</li>
+            </ul>
+
+            <p class="help-section">Ejemplos</p>
+
+            <div class="help-example">
+                <div class="help-row">
+                    <span class="help-tile" data-state="correct">G</span>
+                    <span class="help-tile">A</span>
+                    <span class="help-tile">T</span>
+                    <span class="help-tile">O</span>
+                    <span class="help-tile">S</span>
+                </div>
+                <p><strong>G</strong> está en la palabra y en la posición correcta.</p>
+            </div>
+
+            <div class="help-example">
+                <div class="help-row">
+                    <span class="help-tile">V</span>
+                    <span class="help-tile" data-state="present">I</span>
+                    <span class="help-tile">N</span>
+                    <span class="help-tile">O</span>
+                    <span class="help-tile">S</span>
+                </div>
+                <p><strong>I</strong> está en la palabra pero en otra posición.</p>
+            </div>
+
+            <div class="help-example">
+                <div class="help-row">
+                    <span class="help-tile">P</span>
+                    <span class="help-tile">L</span>
+                    <span class="help-tile">A</span>
+                    <span class="help-tile" data-state="absent">Z</span>
+                    <span class="help-tile">A</span>
+                </div>
+                <p><strong>Z</strong> no está en la palabra.</p>
+            </div>
+
+            <button id="btn-help-start">¡A jugar!</button>
+        </div>
+    </div>
+
     <div id="modal" class="modal hidden">
         <div class="modal-box">
             <div id="modal-icon"></div>
@@ -78,6 +129,23 @@
            autocomplete="off" autocorrect="off"
            autocapitalize="characters" spellcheck="false"
            aria-hidden="true" tabindex="-1">
+
+    <script>
+        (function () {
+            const KEY = 'wordle_help_seen';
+            const modal = document.getElementById('help-modal');
+            const open = () => modal.classList.remove('hidden');
+            const close = () => {
+                modal.classList.add('hidden');
+                localStorage.setItem(KEY, '1');
+            };
+            document.getElementById('btn-help').addEventListener('click', open);
+            document.getElementById('btn-help-close').addEventListener('click', close);
+            document.getElementById('btn-help-start').addEventListener('click', close);
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+            if (!localStorage.getItem(KEY)) open();
+        })();
+    </script>
 
     <script type="module" src="app.js"></script>
 </body>
