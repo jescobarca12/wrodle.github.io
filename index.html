@@ -16,7 +16,6 @@
     <header>
         <h1>WORDLE ES</h1>
         <p class="subtitle">Adivina la palabra de 5 letras</p>
-        <button id="btn-logout" title="Cerrar sesión">🚪</button>
     </header>
 
     <div id="toast" class="toast hidden"></div>
@@ -79,19 +78,6 @@
            autocomplete="off" autocorrect="off"
            autocapitalize="characters" spellcheck="false"
            aria-hidden="true" tabindex="-1">
-
-    <script type="module">
-        import { isLoggedIn, getUser, logout } from './modules/auth.js';
-        if (!isLoggedIn()) location.replace('./login.html');
-
-        const user = getUser();
-        const subtitle = document.querySelector('.subtitle');
-        if (subtitle && user) {
-            subtitle.textContent = `Jugando como ${user.username}`;
-        }
-
-        document.getElementById('btn-logout')?.addEventListener('click', logout);
-    </script>
 
     <script type="module" src="app.js"></script>
 </body>
